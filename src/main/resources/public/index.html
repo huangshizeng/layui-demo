@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- import CSS -->
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <script src="/js/jquery-3.4.1.min.js"></script>
+    <script src="/layui/layui.all.js"></script>
+    <style>
+        .layui-table-page{text-align: center;}
+    </style>
+</head>
+<body>
+    <table id="demo" lay-filter="test"></table>
+</body>
+<script>
+    layui.use('table', function(){
+        var table = layui.table;
+
+        //第一个实例
+        table.render({
+            elem: '#demo'
+            ,height: 312
+            ,url: '/list' //数据接口
+            ,page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['prev', 'page', 'next', 'skip', 'count'] //自定义分页布局
+                ,groups: 7 //只显示 1 个连续页码
+                ,theme: 'default'
+            }
+            ,cols: [[ //表头
+                {field: 'checkbox', title: 'checkbox', width:80, type:'checkbox', fixed: 'left'},
+                {field: 'number', title: '序号', type:'numbers', width:80, fixed: 'left'},
+                {field: 'id', title: 'id', width: 200},
+                {field: 'name', title: '书名', width:280}
+                ,{field: 'author', title: '作者', width:220}
+                ,{field: 'publisher', title: '出版社', width:180}
+                ,{field: 'price', title: '价格 ', width: 100, sort: true}
+                ,{field: 'updateTime', title: '更新时间', width: 180}
+                ,{fixed: 'right', title: '操作', width:150, align:'center', toolbar: '#barDemo'}
+            ]],
+            parseData: function(res){ //res 即为原始返回的数据
+                return {
+                    "code": 0, //解析接口状态
+                    "msg": "查询成功", //解析提示文本
+                    "count": res.totalElements, //解析数据长度
+                    "data": res.content //解析数据列表
+                };
+            },
+            smartReloadModel:true
+        });
+
+        //监听工具条
+        table.on('tool(test)', function(obj){ //注：tool是工具条事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var data = obj.data; //获得当前行数据
+            var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+            var tr = obj.tr; //获得当前行 tr 的DOM对象
+
+            if(layEvent === 'detail'){ //查看
+                alert("点击查看按钮");
+            } else if(layEvent === 'del'){ //删除
+                layer.confirm('确定', function(index){
+                    obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                    layer.close(index);
+                    //向服务端发送删除指令
+                    $.ajax({
+                        url: "/books/delete",
+                        type: "post",
+                        data: {
+                            "id": data.id
+                        },
+                        success: function (result) {
+                            layer.msg("删除成功", {icon: 1, offset: '80px'});
+                            table.reload('demo', {
+                                page: {
+                                    curr: 1 //重新从第 1 页开始
+                                }
+                            }, 'data')
+                        }
+                    })
+                });
+            } else if(layEvent === 'edit'){ //编辑
+                //do something
+                alert("编辑");
+                //同步更新缓存对应的值
+                obj.update({
+                    username: '123'
+                    ,title: 'xxx'
+                });
+            }
+        });
+    });
+</script>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="detail">查看</a>
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+</html>
